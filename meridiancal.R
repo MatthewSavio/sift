@@ -36,21 +36,21 @@ newdata$Tenure <- floor(newdata$DaysInJob / 365)
 print("19")
 #Add Mood Engagement Row
 newdata$MoodEng[newdata$Mood.Score < 8]<-"Engaged"
-newdata$MoodEng[newdata$Mood.Score < 6]<-"Neutral"
-newdata$MoodEng[newdata$Mood.Score < 4]<-"Disengaged"
+newdata$MoodEng[newdata$Mood.Score < 5.5]<-"Neutral"
+newdata$MoodEng[newdata$Mood.Score < 3.5]<-"Disengaged"
 
 #Add Q1 Row
 newdata$Q1[newdata$Category.Question.1.Score < 8]<-"Engaged"
-newdata$Q1[newdata$Category.Question.1.Score < 6]<-"Neutral"
-newdata$Q1[newdata$Category.Question.1.Score < 4]<-"Disengaged"
+newdata$Q1[newdata$Category.Question.1.Score < 5.5]<-"Neutral"
+newdata$Q1[newdata$Category.Question.1.Score < 3.5]<-"Disengaged"
 
 newdata$Q2[newdata$Category.Question.2.Score < 8]<-"Engaged"
-newdata$Q2[newdata$Category.Question.2.Score < 6]<-"Neutral"
-newdata$Q2[newdata$Category.Question.2.Score < 4]<-"Disengaged"
+newdata$Q2[newdata$Category.Question.2.Score < 5.5]<-"Neutral"
+newdata$Q2[newdata$Category.Question.2.Score < 3.5]<-"Disengaged"
 
 newdata$Q3[newdata$Category.Question.3.Score < 8]<-"Engaged"
-newdata$Q3[newdata$Category.Question.3.Score < 6]<-"Neutral"
-newdata$Q3[newdata$Category.Question.3.Score < 4]<-"Disengaged"
+newdata$Q3[newdata$Category.Question.3.Score < 5.5]<-"Neutral"
+newdata$Q3[newdata$Category.Question.3.Score < 3.5]<-"Disengaged"
 
 
 
@@ -59,8 +59,8 @@ newdata$QAvg <- rowMeans(subset(newdata, select = c(Category.Question.1.Score, C
 
 #Add QAvg Engagement Row
 newdata$QEng[newdata$QAvg < 8]<-"Engaged"
-newdata$QEng[newdata$QAvg < 6]<-"Neutral"
-newdata$QEng[newdata$QAvg < 4]<-"Disengaged"
+newdata$QEng[newdata$QAvg < 5.5]<-"Neutral"
+newdata$QEng[newdata$QAvg < 3.5]<-"Disengaged"
 
 
 print("49")
