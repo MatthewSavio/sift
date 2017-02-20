@@ -7,10 +7,34 @@ library(dplyr)
 
 ##### Import Datafile Function given file name
 
+
 ##### Check Columns for common types, confirm with User
 
 ##### Calculate NPS from a column of numbers
 # Sum up Disengaged answers, Neutral answers, Engaged answers and calculate Engagement NPS from those as different answers
+# Inputs:
+# Datatable "newdata"
+# New Column Name  "MoodEng"
+# Column with Scores "Mood.Score"
+# Upper Bounds "8"
+# Neutral Bounds "5.5"
+# Lower Bounds "3.5"
+# TLmatrix.Mood <- within(TLmatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
+
+NewCol <- function(df, colname="NewCol") {
+	df[,colname] <- NA
+	return (df)
+}
+
+NPSCreate <- function(df, ScoreColStr, EmptyColStr, LBound=3.5, MBound=5.5, UBound=8) {
+
+	df[[EmptyColStr]][df[[ScoreColStr]] < UBound] <- "Engaged"
+	df[[EmptyColStr]][df[[ScoreColStr]] < MBound] <- "Neutral"
+	df[[EmptyColStr]][df[[ScoreColStr]] < LBound] <- "Disengaged"
+	return (df)
+}
+
+
 
 
 ##### Get CrossTable
