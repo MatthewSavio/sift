@@ -3,7 +3,23 @@
 library(plyr)
 library(dplyr)
 
-#change it
+#### Functions:  ######## 
+
+##### Import Datafile Function given file name
+
+##### Check Columns for common types, confirm with User
+
+##### Calculate NPS from a column of numbers
+# Sum up Disengaged answers, Neutral answers, Engaged answers and calculate Engagement NPS from those as different answers
+
+
+##### Get CrossTable
+
+##### Export Tables to file
+
+
+
+#####################
 
 # Part one: Import new datafile
 
