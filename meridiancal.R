@@ -3,7 +3,47 @@
 library(plyr)
 library(dplyr)
 
-#change it
+#### Functions:  ######## 
+
+##### Import Datafile Function given file name
+
+
+##### Check Columns for common types, confirm with User
+
+##### Calculate NPS from a column of numbers
+# Sum up Disengaged answers, Neutral answers, Engaged answers and calculate Engagement NPS from those as different answers
+# Inputs:
+# Datatable "newdata"
+# New Column Name  "MoodEng"
+# Column with Scores "Mood.Score"
+# Upper Bounds "8"
+# Neutral Bounds "5.5"
+# Lower Bounds "3.5"
+# TLmatrix.Mood <- within(TLmatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
+
+NewCol <- function(df, colname="NewCol") {
+	df[,colname] <- NA
+	return (df)
+}
+
+NPSCreate <- function(df, ScoreColStr, EmptyColStr, LBound=3.5, MBound=5.5, UBound=8) {
+
+	df[[EmptyColStr]][df[[ScoreColStr]] < UBound] <- "Engaged"
+	df[[EmptyColStr]][df[[ScoreColStr]] < MBound] <- "Neutral"
+	df[[EmptyColStr]][df[[ScoreColStr]] < LBound] <- "Disengaged"
+	return (df)
+}
+
+
+
+
+##### Get CrossTable
+
+##### Export Tables to file
+
+
+
+#####################
 
 # Part one: Import new datafile
 
@@ -20,21 +60,21 @@ newdata$Tenure <- floor(newdata$DaysInJob / 365)
 print("19")
 #Add Mood Engagement Row
 newdata$MoodEng[newdata$Mood.Score < 8]<-"Engaged"
-newdata$MoodEng[newdata$Mood.Score < 6]<-"Neutral"
-newdata$MoodEng[newdata$Mood.Score < 4]<-"Disengaged"
+newdata$MoodEng[newdata$Mood.Score < 5.5]<-"Neutral"
+newdata$MoodEng[newdata$Mood.Score < 3.5]<-"Disengaged"
 
 #Add Q1 Row
 newdata$Q1[newdata$Category.Question.1.Score < 8]<-"Engaged"
-newdata$Q1[newdata$Category.Question.1.Score < 6]<-"Neutral"
-newdata$Q1[newdata$Category.Question.1.Score < 4]<-"Disengaged"
+newdata$Q1[newdata$Category.Question.1.Score < 5.5]<-"Neutral"
+newdata$Q1[newdata$Category.Question.1.Score < 3.5]<-"Disengaged"
 
 newdata$Q2[newdata$Category.Question.2.Score < 8]<-"Engaged"
-newdata$Q2[newdata$Category.Question.2.Score < 6]<-"Neutral"
-newdata$Q2[newdata$Category.Question.2.Score < 4]<-"Disengaged"
+newdata$Q2[newdata$Category.Question.2.Score < 5.5]<-"Neutral"
+newdata$Q2[newdata$Category.Question.2.Score < 3.5]<-"Disengaged"
 
 newdata$Q3[newdata$Category.Question.3.Score < 8]<-"Engaged"
-newdata$Q3[newdata$Category.Question.3.Score < 6]<-"Neutral"
-newdata$Q3[newdata$Category.Question.3.Score < 4]<-"Disengaged"
+newdata$Q3[newdata$Category.Question.3.Score < 5.5]<-"Neutral"
+newdata$Q3[newdata$Category.Question.3.Score < 3.5]<-"Disengaged"
 
 
 
@@ -43,8 +83,8 @@ newdata$QAvg <- rowMeans(subset(newdata, select = c(Category.Question.1.Score, C
 
 #Add QAvg Engagement Row
 newdata$QEng[newdata$QAvg < 8]<-"Engaged"
-newdata$QEng[newdata$QAvg < 6]<-"Neutral"
-newdata$QEng[newdata$QAvg < 4]<-"Disengaged"
+newdata$QEng[newdata$QAvg < 5.5]<-"Neutral"
+newdata$QEng[newdata$QAvg < 3.5]<-"Disengaged"
 
 
 print("49")
