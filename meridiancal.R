@@ -23,12 +23,18 @@ library(dplyr)
 # Lower Bounds "3.5"
 # TLmatrix.Mood <- within(TLmatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
+########## Initialize Bounds ##########
+LB <- 3.5
+MB <- 5.5
+UB <- 8
+
+
 NewCol <- function(df, colname="NewCol") {
 	df[,colname] <- NA
 	return (df)
 }
 
-NPSCol <- function(df, ScoreColStr, EmptyColStr, LBound=3.5, MBound=5.5, UBound=8) {
+NPSCol <- function(df, ScoreColStr, EmptyColStr, LBound=LB, MBound=MB, UBound=UB) {
 	df[[EmptyColStr]][df[[ScoreColStr]] < UBound] <- "Engaged"
 	df[[EmptyColStr]][df[[ScoreColStr]] < MBound] <- "Neutral"
 	df[[EmptyColStr]][df[[ScoreColStr]] < LBound] <- "Disengaged"
@@ -42,7 +48,7 @@ MakeCrossTable <- function(df, rows, columns) {
 
 # Appends an NPS Column to a dataframe.  Accepts Col Name Strings are Arguments
 # example:    df <- NewNPSCol(df, "NPS_Score", "NewNPSCol")
-NewNPSCol <- function(df, ScoreColStr, colname="NewCol", LBound=3.5, MBound=5.5, UBound=8) {
+NewNPSCol <- function(df, ScoreColStr, colname="NewCol", LBound=LB, MBound=MB, UBound=UB) {
 	df <- NewCol(df, colname)
 	df <- NPSCol(df, ScoreColStr, colname, LBound, MBound, UBound)
 	return (df)
@@ -71,7 +77,30 @@ ExportTable <- function(df, filename="csvexport") {
 	write.csv(df, file=filename)
 }
 
+# Asks for the Company to parse the datafile
+AskCompName <- function() {
+	CompName <- readline(prompt="Company Name? [FOC or Meridian]: ")
+	return (CompName)
+}
 
+# Calculates vertical company-wide NPS on a column
+# example:     CalcColNPS(df, "EngagementCol")
+CalcColNPS <- function(df, colname) {
+	a <- sum(df[[colname]] == "Engaged", na.rm = TRUE)
+	b <- sum(df[[colname]] == "Neutral", na.rm = TRUE)
+	c <- sum(df[[colname]] == "Disengaged", na.rm = TRUE)
+	ColNPS <- plyr::round_any(100 * (a - c)/(a + b + c), accuracy=1, f=round)
+	return (ColNPS)
+}
+
+# Adds a new column with only Engagement of a Category
+
+NewCategoryCol <- function(df, categoryname, colname, catcol=category) {
+	df[[colname]][(df$QAvg == "Engaged")&(df[[catcol]] == categoryname)]<-"Engaged"
+	df[[colname]][(df$QAvg == "Neutral")&(df[[catcol]] == categoryname)]<-"Neutral"
+	df[[colname]][(df$QAvg == "Disengaged")&(df[[catcol]] == categoryname)]<-"Disengaged"
+	return(df)
+}
 
 
 ##### Get CrossTable
@@ -81,147 +110,95 @@ ExportTable <- function(df, filename="csvexport") {
 
 #####################
 
-# Part one: Import new datafile
 
+# Part one: Import new datafile
 df <- ImportFile()
 
+# Part two:  Parse File Headers
+CompName <- AskCompName()
+
 # Initialize Column Headers
-# Should set this to "isFOC vs. isMeridian"
-TenureDaysCol <- "anniversaryDate"
-MoodScore <- "mood_score"
+
+if (CompName == "FOC") {
+	TenureDaysCol <- "anniversaryDate"
+	MoodScore <- "mood_score"
+	Q1Score <- "category_question_1_score"
+	Q2Score <- "category_question_2_score"
+	Q3Score <- "category_question_3_score"
+	dateformat <- "%m/%d/%Y"
+	category <- "survey_category"
+}
+
+if (CompName == "Meridian") {
+	dateformat <- "%m/%d/%y"
+}
 
 
 #Add column with days since start date at job
-df$DaysInJob <- (Sys.Date() - as.Date(as.character(df[[TenureDaysCol]]), format="%m/%d/%y"))# 
+df$DaysInJob <- (Sys.Date() - as.Date(as.character(df[[TenureDaysCol]]), format=dateformat))# 
 
 # Add column with 'Less than one year' and 'Greater than one year'
 df$Tenure <- floor(df$DaysInJob / 365)
 
 print("19")
+
 #Add Mood Engagement Row
-
-df <- NewNPSCol(df, MoodScore)
-
-df$MoodEng[df$Mood.Score < 8]<-"Engaged"
-df$MoodEng[df$Mood.Score < 5.5]<-"Neutral"
-df$MoodEng[df$Mood.Score < 3.5]<-"Disengaged"
+df <- NewNPSCol(df, MoodScore, "MoodEng")
 
 #Add Q1 Row
-df$Q1[df$Category.Question.1.Score < 8]<-"Engaged"
-df$Q1[df$Category.Question.1.Score < 5.5]<-"Neutral"
-df$Q1[df$Category.Question.1.Score < 3.5]<-"Disengaged"
-
-df$Q2[df$Category.Question.2.Score < 8]<-"Engaged"
-df$Q2[df$Category.Question.2.Score < 5.5]<-"Neutral"
-df$Q2[df$Category.Question.2.Score < 3.5]<-"Disengaged"
-
-df$Q3[df$Category.Question.3.Score < 8]<-"Engaged"
-df$Q3[df$Category.Question.3.Score < 5.5]<-"Neutral"
-df$Q3[df$Category.Question.3.Score < 3.5]<-"Disengaged"
-
+df <- NewNPSCol(df, Q1Score , "Q1")
+df <- NewNPSCol(df, Q2Score , "Q2")
+df <- NewNPSCol(df, Q3Score , "Q3")
 
 
 #Add QAvg Row
-df$QAvg <- rowMeans(subset(df, select = c(Category.Question.1.Score, Category.Question.2.Score, Category.Question.3.Score)), na.rm = TRUE)
+df$QAvgScore <- rowMeans(subset(df, select = c(Q1Score, Q2Score, Q3Score)), na.rm = TRUE)
 
 #Add QAvg Engagement Row
-df$QEng[df$QAvg < 8]<-"Engaged"
-df$QEng[df$QAvg < 5.5]<-"Neutral"
-df$QEng[df$QAvg < 3.5]<-"Disengaged"
-
+df <- NewNPSCol(df, "QAvgScore" , "QAvg")
 
 print("49")
-# rounding function --> moodavg <- plyr::round_any(mean(df$`Mood.Score`), accuracy=0.01, f=floor)
+# rounding function --> moodavg <- plyr::round_any(mean(df$`Mood.Score`), accuracy=0.01, f=round)
 ### Part two: Generate company-wide summaries ###
 
 # Company-wide Mood NPS
-va <- sum(df$MoodEng == "Engaged", na.rm = TRUE)
-vb <- sum(df$MoodEng == "Neutral", na.rm = TRUE)
-vc <- sum(df$MoodEng == "Disengaged", na.rm = TRUE)
+CompanyMood <- CalcColNPS(df, "MoodEng")
 
-AllCompany.Mood <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
+# Company-wide Engagement NPS (This is only useful for single things, useless currently)
+# CompanyQAvg <- CalcColNPS(df, "QAvg")
 
-# Company-wide Engagement NPS
-
-va <- sum(df$QEng == "Engaged", na.rm = TRUE)
-vb <- sum(df$QEng == "Neutral", na.rm = TRUE)
-vc <- sum(df$QEng == "Disengaged", na.rm = TRUE)
-
-AllCompany.Engagement <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
 # Company-wide Categories
-
+### NOTE:  Will have to make this able to work without all categories present
 #Add Category Engagement Rows
-df$OnlyOwn[(df$QEng == "Engaged")&(df$Category == "Ownership")]<-"Engaged"
-df$OnlyOwn[(df$QEng == "Neutral")&(df$Category == "Ownership")]<-"Neutral"
-df$OnlyOwn[(df$QEng == "Disengaged")&(df$Category == "Ownership")]<-"Disengaged"
+df <- NewCategoryCol(df, "Ownership", "OnlyOwn")
+CompanyOwnership <- CalcColNPS(df, "OnlyOwn")
 
-va <- sum(df$OnlyOwn == "Engaged", na.rm = TRUE)
-vb <- sum(df$OnlyOwn == "Neutral", na.rm = TRUE)
-vc <- sum(df$OnlyOwn == "Disengaged", na.rm = TRUE)
+df <- NewCategoryCol(df, "Career Development", "OnlyCD")
+CompanyCareerDevelopment <- CalcColNPS(df, "OnlyCD")
 
-AllCompany.Ownership <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
+df <- NewCategoryCol(df, "Leadership", "OnlyLead")
+CompanyLeadership <- CalcColNPS(df, "OnlyLead")
 
+df <- NewCategoryCol(df, "Mission", "OnlyMiss")
+CompanyMission <- CalcColNPS(df, "OnlyMiss")
 
-df$OnlyCD[(df$QEng == "Engaged")&(df$Category == "Career Development")]<-"Engaged"
-df$OnlyCD[(df$QEng == "Neutral")&(df$Category == "Career Development")]<-"Neutral"
-df$OnlyCD[(df$QEng == "Disengaged")&(df$Category == "Career Development")]<-"Disengaged"
+df <- NewCategoryCol(df, "Recognition", "OnlyRec")
+CompanyRecognition <- CalcColNPS(df, "OnlyRec")
 
-va <- sum(df$OnlyCD == "Engaged", na.rm = TRUE)
-vb <- sum(df$OnlyCD == "Neutral", na.rm = TRUE)
-vc <- sum(df$OnlyCD == "Disengaged", na.rm = TRUE)
+df <- NewCategoryCol(df, "Teamwork", "OnlyTeam")
+CompanyTeamwork <- CalcColNPS(df, "OnlyTeam")
 
-AllCompany.Career_Development <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
+#### NOTE:  Need a way to combine these into a table.
 
-
-df$OnlyLea[(df$QEng == "Engaged")&(df$Category == "Leadership")]<-"Engaged"
-df$OnlyLea[(df$QEng == "Neutral")&(df$Category == "Leadership")]<-"Neutral"
-df$OnlyLea[(df$QEng == "Disengaged")&(df$Category == "Leadership")]<-"Disengaged"
-
-va <- sum(df$OnlyLea == "Engaged", na.rm = TRUE)
-vb <- sum(df$OnlyLea == "Neutral", na.rm = TRUE)
-vc <- sum(df$OnlyLea == "Disengaged", na.rm = TRUE)
-print ("100")
-AllCompany.Leadership <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
-
-df$OnlyMis[(df$QEng == "Engaged")&(df$Category == "Mission")]<-"Engaged"
-df$OnlyMis[(df$QEng == "Neutral")&(df$Category == "Mission")]<-"Neutral"
-df$OnlyMis[(df$QEng == "Disengaged")&(df$Category == "Mission")]<-"Disengaged"
-
-va <- sum(df$OnlyMis == "Engaged", na.rm = TRUE)
-vb <- sum(df$OnlyMis == "Neutral", na.rm = TRUE)
-vc <- sum(df$OnlyMis == "Disengaged", na.rm = TRUE)
-
-AllCompany.Mission <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
-
-df$OnlyRec[(df$QEng == "Engaged")&(df$Category == "Recognition")]<-"Engaged"
-df$OnlyRec[(df$QEng == "Neutral")&(df$Category == "Recognition")]<-"Neutral"
-df$OnlyRec[(df$QEng == "Disengaged")&(df$Category == "Recognition")]<-"Disengaged"
-
-va <- sum(df$OnlyRec == "Engaged", na.rm = TRUE)
-vb <- sum(df$OnlyRec == "Neutral", na.rm = TRUE)
-vc <- sum(df$OnlyRec == "Disengaged", na.rm = TRUE)
-
-AllCompany.Recognition <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
-
-df$OnlyTea[(df$QEng == "Engaged")&(df$Category == "Teamwork")]<-"Engaged"
-df$OnlyTea[(df$QEng == "Neutral")&(df$Category == "Teamwork")]<-"Neutral"
-df$OnlyTea[(df$QEng == "Disengaged")&(df$Category == "Teamwork")]<-"Disengaged"
-
-va <- sum(df$OnlyTea == "Engaged", na.rm = TRUE)
-vb <- sum(df$OnlyTea == "Neutral", na.rm = TRUE)
-vc <- sum(df$OnlyTea == "Disengaged", na.rm = TRUE)
-
-AllCompany.Teamwork <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
-
-AllCompanyColHead <- c('Mood', 'Leadership')
-AllCompanyColBody <- c(AllCompany.Mood, AllCompany.Leadership)
+#AllCompanyColHead <- c('Mood', 'Leadership')
+#AllCompanyColBody <- c(AllCompany.Mood, AllCompany.Leadership)
 # AllCompanyColHead <- c('Mood', 'Engagement', 'Career Development', 'Leadership', 'Mission', 'Ownership', 'Recognition', 'Teamwork')
 # AllCompanyColBody <- c(AllCompany.Mood, AllCompany.Engagement, AllCompany.Career_Development, AllCompany.Leadership, AllCompany.Mission, AllCompany.Ownership, AllCompany.Recognition, AllCompany.Teamwork)
 
 print ("135")
 ####### !!! #######
-AllCompany <- data.frame(AllCompanyColHead, AllCompanyColBody)
+#AllCompany <- data.frame(AllCompanyColHead, AllCompanyColBody)
 ####### !!! #######
 print ("139")
 ### Part three:  Slice and dice ###
@@ -233,6 +210,16 @@ print ("139")
 # A Career Dev...
 # eg <- c(A Person, A Mood, A Engage)
 # 
+
+##### NOTE:  Individual Questions for each cycle Score
+
+##### NOTE:  Team Leaders for each cycle score
+
+##### NOTE:  Tenure by
+
+##### NOTE:  Title by 
+
+##### NOTE:  subTeam by
 
 # Get Team Leaders with Mood Score Each. 
 
