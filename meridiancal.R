@@ -62,6 +62,13 @@ ImportFile <- function() {
 	return (newdata)
 }
 
+# Exports dataframe to CSV with datestamp
+# example:    ExportTable(df, "finaltable")
+ExportTable <- function(df, filename="csvexport") {
+	filename <- paste(filename, "_", Sys.Date(), ".csv", sep="") 
+	write.csv(df, file=filename)
+}
+
 ##### Get CrossTable
 
 ##### Export Tables to file
