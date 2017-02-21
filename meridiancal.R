@@ -27,21 +27,40 @@ NewCol <- function(df, colname="NewCol") {
 }
 
 NPSCol <- function(df, ScoreColStr, EmptyColStr, LBound=3.5, MBound=5.5, UBound=8) {
-
 	df[[EmptyColStr]][df[[ScoreColStr]] < UBound] <- "Engaged"
 	df[[EmptyColStr]][df[[ScoreColStr]] < MBound] <- "Neutral"
 	df[[EmptyColStr]][df[[ScoreColStr]] < LBound] <- "Disengaged"
 	return (df)
 }
 
+MakeCrossTable <- function(df, rows, columns) {
+	df <- as.data.frame.matrix(xtabs(~rows + columns, data=df))
+	return (df)
+}
+
+# Accepts Col Name Strings are Arguments
+# example:    df <- NewNPSCol(df, "NPS_Score", "NewNPSCol")
 NewNPSCol <- function(df, ScoreColStr, colname="NewCol", LBound=3.5, MBound=5.5, UBound=8) {
 	df <- NewCol(df, colname)
 	df <- NPSCol(df, ScoreColStr, colname, LBound, MBound, UBound)
 	return (df)
-
 }
 
+# Accepts Columns as Arguments, makes a separate table
+# example:   NPSTable <- MakeNPSTable(df, df$Team.Leader, df$NewNPSCol)
+MakeNPSTable <- function(df, GroupCol, EngagementCol) {
+	df <- MakeCrossTable(df, GroupCol, EngagementCol)
+	df <- within(df, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
+	return (df)
+}
 
+# Requests file name of CSV in folder and imports it to a var
+# example:     df <- ImportFile()
+ImportFile <- function() {
+	filename <- readline(prompt="Enter a file name: ")
+	newdata <- read.csv(filename, header = TRUE)
+	return (newdata)
+}
 
 ##### Get CrossTable
 
