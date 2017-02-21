@@ -88,8 +88,7 @@ MakeNPSTable <- function(df, GroupCol, EngagementCol) {
 
 # Requests file name of CSV in folder and imports it to a var
 # example:     df <- ImportFile()
-ImportFile <- function() {
-	filename <- readline(prompt="Enter a file name: ")
+ImportFile <- function(filename) {
 	df <- read.csv(filename, header = TRUE)
 	return (df)
 }
@@ -97,6 +96,7 @@ ImportFile <- function() {
 # Exports dataframe to CSV with datestamp
 # example:    ExportTable(df, "finaltable")
 ExportTable <- function(df, filename="csvexport") {
+	filename <- gsub("[?().,@~`^&*{}<>#;!¡¿%$·']", "", filename)
 	filename <- paste(filename, "_", Sys.Date(), ".csv", sep="") 
 	write.csv(df, file=filename)
 }
@@ -171,7 +171,8 @@ dfCategoryBy <- function(df, categoryby=teamleader, ColMood="MoodEng", ColCD="On
 
 
 # Part one: Import new datafile
-df <- ImportFile()
+filename <- readline(prompt="Enter a file name: ")
+df <- ImportFile(filename)
 
 # Part two:  Parse File Headers
 CompName <- AskCompName()
@@ -339,6 +340,26 @@ Q1_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q1CD", "Q1Lead", "Q1Miss", 
 Q2_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q2CD", "Q2Lead", "Q2Miss", "Q2Own", "Q2Rec", "Q2Team")
 Q3_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q3CD", "Q3Lead", "Q3Miss", "Q3Own", "Q3Rec", "Q3Team")
 
+filenameTL <- paste(filename, "_", "TL_Table", sep="")
+ExportTable(TL_Table, filenameTL)
+
+filenameJobTitle <- paste(filename, "_", "JobTitle_Table", sep="")
+ExportTable(JobTitle_Table, filenameJobTitle)
+
+filenameTeam <- paste(filename, "_", "Team_Table", sep="")
+ExportTable(Team_Table, filenameTeam)
+
+filenameTenure <- paste(filename, "_", "Tenure_Table", sep="")
+ExportTable(Tenure_Table, filenameTenure)
+
+filenameQ1 <- paste(filename, "_", "Q1_Table", sep="")
+ExportTable(Q1_Table, filenameQ1)
+
+filenameQ2 <- paste(filename, "_", "Q2_Table", sep="")
+ExportTable(Q2_Table, filenameQ2)
+
+filenameQ3 <- paste(filename, "_", "Q3_Table", sep="")
+ExportTable(Q3_Table, filenameQ3)
 
 ######  !!!  ######
 
