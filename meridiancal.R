@@ -26,7 +26,7 @@ NewCol <- function(df, colname="NewCol") {
 	return (df)
 }
 
-NPSCreate <- function(df, ScoreColStr, EmptyColStr, LBound=3.5, MBound=5.5, UBound=8) {
+NPSCol <- function(df, ScoreColStr, EmptyColStr, LBound=3.5, MBound=5.5, UBound=8) {
 
 	df[[EmptyColStr]][df[[ScoreColStr]] < UBound] <- "Engaged"
 	df[[EmptyColStr]][df[[ScoreColStr]] < MBound] <- "Neutral"
@@ -34,6 +34,12 @@ NPSCreate <- function(df, ScoreColStr, EmptyColStr, LBound=3.5, MBound=5.5, UBou
 	return (df)
 }
 
+NewNPSCol <- function(df, ScoreColStr, colname="NewCol", LBound=3.5, MBound=5.5, UBound=8) {
+	df <- NewCol(df, colname)
+	df <- NPSCol(df, ScoreColStr, colname, LBound, MBound, UBound)
+	return (df)
+
+}
 
 
 
