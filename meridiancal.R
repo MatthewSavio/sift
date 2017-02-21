@@ -29,8 +29,8 @@ MB <- 5.5
 UB <- 8
 
 
-NewCol <- function(df, colname="NewCol") {
-	df[,colname] <- NA
+NewCol <- function(df, colname="NewCol", fill=NA) {
+	df[,colname] <- fill
 	return (df)
 }
 
@@ -54,10 +54,22 @@ NewNPSCol <- function(df, ScoreColStr, colname="NewCol", LBound=LB, MBound=MB, U
 	return (df)
 }
 
+# If a Column Header is missing, create a blank column with that header.
+# example:  TestMissingCol(df, "Engaged")
+TestMissingCol <- function(df, colname) {
+	if (!(colname %in% colnames(df))) {
+		df <- NewCol(df, colname, 0)
+	}
+	return (df)
+}
+
 # Accepts Columns as Arguments, makes a separate table
 # example:   NPSTable <- MakeNPSTable(df, df$Team.Leader, df$NewNPSCol)
 MakeNPSTable <- function(df, GroupCol, EngagementCol) {
 	df <- MakeCrossTable(df, GroupCol, EngagementCol)
+	df <- TestMissingCol(df, "Engaged")
+	df <- TestMissingCol(df, "Neutral")
+	df <- TestMissingCol(df, "Disengaged")
 	df <- within(df, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 	return (df)
 }
@@ -127,6 +139,7 @@ if (CompName == "FOC") {
 	Q3Score <- "category_question_3_score"
 	dateformat <- "%m/%d/%Y"
 	category <- "survey_category"
+	teamleader <- "teamLeader"
 }
 
 if (CompName == "Meridian") {
@@ -224,6 +237,19 @@ print ("139")
 # Get Team Leaders with Mood Score Each. 
 
 # First, get each Team Leader with number of engaged/disengaged:
+
+TL_Mood <- MakeNPSTable(df, df[[teamleader]], df[["MoodEng"]])
+TL_CareerDev <- MakeNPSTable(df, df[[teamleader]], df[["OnlyCD"]])
+TL_Leadership <- MakeNPSTable(df, df[[teamleader]], df[["OnlyLead"]])
+TL_Mission <- MakeNPSTable(df, df[[teamleader]], df[["OnlyMiss"]])
+TL_Ownership <- MakeNPSTable(df, df[[teamleader]], df[["OnlyOwn"]])
+TL_Recognition <- MakeNPSTable(df, df[[teamleader]], df[["OnlyRec"]])
+TL_Teamwork <- MakeNPSTable(df, df[[teamleader]], df[["OnlyTeam"]])
+
+TLTableHead <- c("Mood", "Career_Development", "Leadership", "Mission", "Ownership", "Recognition", "Teamwork")
+TLTableBody <- c(TL_Mood, TL_CareerDev, TL_Leadership, TL_Mission, TL_Ownership, TL_Recognition, TL_Teamwork)
+TLTable <- data.frame(TLTableHead, TLTableBody)
+
 
 TLmatrix.Mood <- as.data.frame.matrix(xtabs(~Team.Leader + MoodEng, data=df))
 
