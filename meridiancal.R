@@ -297,8 +297,8 @@ print ("139")
 TL_Table <- dfCategoryBy(df, teamleader)
 JobTitle_Table <- dfCategoryBy(df, jobtitle)
 Team_Table <- dfCategoryBy(df, team)
-Tenure_Table <- dfCategoryBy(df, "Tenure")
-
+# Tenure_Table <- dfCategoryBy(df, "Tenure")
+### NOTE:  Tenure is Broken.
 
 ## NOTE:  Add Company Averages as a column to the beginning / end here.
 
@@ -349,8 +349,8 @@ ExportTable(JobTitle_Table, filenameJobTitle)
 filenameTeam <- paste(filename, "_", "Team_Table", sep="")
 ExportTable(Team_Table, filenameTeam)
 
-filenameTenure <- paste(filename, "_", "Tenure_Table", sep="")
-ExportTable(Tenure_Table, filenameTenure)
+# filenameTenure <- paste(filename, "_", "Tenure_Table", sep="")
+# ExportTable(Tenure_Table, filenameTenure)
 
 filenameQ1 <- paste(filename, "_", "Q1_Table", sep="")
 ExportTable(Q1_Table, filenameQ1)
