@@ -15,7 +15,7 @@ library(dplyr)
 ##### Calculate NPS from a column of numbers
 # Sum up Disengaged answers, Neutral answers, Engaged answers and calculate Engagement NPS from those as different answers
 # Inputs:
-# Datatable "newdata"
+# Datatable "df"
 # New Column Name  "MoodEng"
 # Column with Scores "Mood.Score"
 # Upper Bounds "8"
@@ -40,7 +40,7 @@ MakeCrossTable <- function(df, rows, columns) {
 	return (df)
 }
 
-# Accepts Col Name Strings are Arguments
+# Appends an NPS Column to a dataframe.  Accepts Col Name Strings are Arguments
 # example:    df <- NewNPSCol(df, "NPS_Score", "NewNPSCol")
 NewNPSCol <- function(df, ScoreColStr, colname="NewCol", LBound=3.5, MBound=5.5, UBound=8) {
 	df <- NewCol(df, colname)
@@ -60,8 +60,8 @@ MakeNPSTable <- function(df, GroupCol, EngagementCol) {
 # example:     df <- ImportFile()
 ImportFile <- function() {
 	filename <- readline(prompt="Enter a file name: ")
-	newdata <- read.csv(filename, header = TRUE)
-	return (newdata)
+	df <- read.csv(filename, header = TRUE)
+	return (df)
 }
 
 # Exports dataframe to CSV with datestamp
@@ -71,137 +71,146 @@ ExportTable <- function(df, filename="csvexport") {
 	write.csv(df, file=filename)
 }
 
+
+
+
 ##### Get CrossTable
 
-##### Export Tables to file
-
+# Get function for combining Meridian's CSV sheets on top of each other.
 
 
 #####################
 
 # Part one: Import new datafile
 
-filename <- readline(prompt="Enter a file name: ")
+df <- ImportFile()
 
-newdata <- read.csv(filename, header = TRUE)
+# Initialize Column Headers
+# Should set this to "isFOC vs. isMeridian"
+TenureDaysCol <- "anniversaryDate"
+MoodScore <- "mood_score"
+
 
 #Add column with days since start date at job
-newdata$DaysInJob <- (Sys.Date() - as.Date(as.character(newdata$`Date.in.Job`), format="%m/%d/%y"))# 
+df$DaysInJob <- (Sys.Date() - as.Date(as.character(df[[TenureDaysCol]]), format="%m/%d/%y"))# 
 
 # Add column with 'Less than one year' and 'Greater than one year'
-newdata$Tenure <- floor(newdata$DaysInJob / 365)
+df$Tenure <- floor(df$DaysInJob / 365)
 
 print("19")
 #Add Mood Engagement Row
-newdata$MoodEng[newdata$Mood.Score < 8]<-"Engaged"
-newdata$MoodEng[newdata$Mood.Score < 5.5]<-"Neutral"
-newdata$MoodEng[newdata$Mood.Score < 3.5]<-"Disengaged"
+
+df <- NewNPSCol(df, MoodScore)
+
+df$MoodEng[df$Mood.Score < 8]<-"Engaged"
+df$MoodEng[df$Mood.Score < 5.5]<-"Neutral"
+df$MoodEng[df$Mood.Score < 3.5]<-"Disengaged"
 
 #Add Q1 Row
-newdata$Q1[newdata$Category.Question.1.Score < 8]<-"Engaged"
-newdata$Q1[newdata$Category.Question.1.Score < 5.5]<-"Neutral"
-newdata$Q1[newdata$Category.Question.1.Score < 3.5]<-"Disengaged"
+df$Q1[df$Category.Question.1.Score < 8]<-"Engaged"
+df$Q1[df$Category.Question.1.Score < 5.5]<-"Neutral"
+df$Q1[df$Category.Question.1.Score < 3.5]<-"Disengaged"
 
-newdata$Q2[newdata$Category.Question.2.Score < 8]<-"Engaged"
-newdata$Q2[newdata$Category.Question.2.Score < 5.5]<-"Neutral"
-newdata$Q2[newdata$Category.Question.2.Score < 3.5]<-"Disengaged"
+df$Q2[df$Category.Question.2.Score < 8]<-"Engaged"
+df$Q2[df$Category.Question.2.Score < 5.5]<-"Neutral"
+df$Q2[df$Category.Question.2.Score < 3.5]<-"Disengaged"
 
-newdata$Q3[newdata$Category.Question.3.Score < 8]<-"Engaged"
-newdata$Q3[newdata$Category.Question.3.Score < 5.5]<-"Neutral"
-newdata$Q3[newdata$Category.Question.3.Score < 3.5]<-"Disengaged"
+df$Q3[df$Category.Question.3.Score < 8]<-"Engaged"
+df$Q3[df$Category.Question.3.Score < 5.5]<-"Neutral"
+df$Q3[df$Category.Question.3.Score < 3.5]<-"Disengaged"
 
 
 
 #Add QAvg Row
-newdata$QAvg <- rowMeans(subset(newdata, select = c(Category.Question.1.Score, Category.Question.2.Score, Category.Question.3.Score)), na.rm = TRUE)
+df$QAvg <- rowMeans(subset(df, select = c(Category.Question.1.Score, Category.Question.2.Score, Category.Question.3.Score)), na.rm = TRUE)
 
 #Add QAvg Engagement Row
-newdata$QEng[newdata$QAvg < 8]<-"Engaged"
-newdata$QEng[newdata$QAvg < 5.5]<-"Neutral"
-newdata$QEng[newdata$QAvg < 3.5]<-"Disengaged"
+df$QEng[df$QAvg < 8]<-"Engaged"
+df$QEng[df$QAvg < 5.5]<-"Neutral"
+df$QEng[df$QAvg < 3.5]<-"Disengaged"
 
 
 print("49")
-# rounding function --> moodavg <- plyr::round_any(mean(newdata$`Mood.Score`), accuracy=0.01, f=floor)
+# rounding function --> moodavg <- plyr::round_any(mean(df$`Mood.Score`), accuracy=0.01, f=floor)
 ### Part two: Generate company-wide summaries ###
 
 # Company-wide Mood NPS
-va <- sum(newdata$MoodEng == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$MoodEng == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$MoodEng == "Disengaged", na.rm = TRUE)
+va <- sum(df$MoodEng == "Engaged", na.rm = TRUE)
+vb <- sum(df$MoodEng == "Neutral", na.rm = TRUE)
+vc <- sum(df$MoodEng == "Disengaged", na.rm = TRUE)
 
 AllCompany.Mood <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
 # Company-wide Engagement NPS
 
-va <- sum(newdata$QEng == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$QEng == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$QEng == "Disengaged", na.rm = TRUE)
+va <- sum(df$QEng == "Engaged", na.rm = TRUE)
+vb <- sum(df$QEng == "Neutral", na.rm = TRUE)
+vc <- sum(df$QEng == "Disengaged", na.rm = TRUE)
 
 AllCompany.Engagement <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
 # Company-wide Categories
 
 #Add Category Engagement Rows
-newdata$OnlyOwn[(newdata$QEng == "Engaged")&(newdata$Category == "Ownership")]<-"Engaged"
-newdata$OnlyOwn[(newdata$QEng == "Neutral")&(newdata$Category == "Ownership")]<-"Neutral"
-newdata$OnlyOwn[(newdata$QEng == "Disengaged")&(newdata$Category == "Ownership")]<-"Disengaged"
+df$OnlyOwn[(df$QEng == "Engaged")&(df$Category == "Ownership")]<-"Engaged"
+df$OnlyOwn[(df$QEng == "Neutral")&(df$Category == "Ownership")]<-"Neutral"
+df$OnlyOwn[(df$QEng == "Disengaged")&(df$Category == "Ownership")]<-"Disengaged"
 
-va <- sum(newdata$OnlyOwn == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$OnlyOwn == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$OnlyOwn == "Disengaged", na.rm = TRUE)
+va <- sum(df$OnlyOwn == "Engaged", na.rm = TRUE)
+vb <- sum(df$OnlyOwn == "Neutral", na.rm = TRUE)
+vc <- sum(df$OnlyOwn == "Disengaged", na.rm = TRUE)
 
 AllCompany.Ownership <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
 
-newdata$OnlyCD[(newdata$QEng == "Engaged")&(newdata$Category == "Career Development")]<-"Engaged"
-newdata$OnlyCD[(newdata$QEng == "Neutral")&(newdata$Category == "Career Development")]<-"Neutral"
-newdata$OnlyCD[(newdata$QEng == "Disengaged")&(newdata$Category == "Career Development")]<-"Disengaged"
+df$OnlyCD[(df$QEng == "Engaged")&(df$Category == "Career Development")]<-"Engaged"
+df$OnlyCD[(df$QEng == "Neutral")&(df$Category == "Career Development")]<-"Neutral"
+df$OnlyCD[(df$QEng == "Disengaged")&(df$Category == "Career Development")]<-"Disengaged"
 
-va <- sum(newdata$OnlyCD == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$OnlyCD == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$OnlyCD == "Disengaged", na.rm = TRUE)
+va <- sum(df$OnlyCD == "Engaged", na.rm = TRUE)
+vb <- sum(df$OnlyCD == "Neutral", na.rm = TRUE)
+vc <- sum(df$OnlyCD == "Disengaged", na.rm = TRUE)
 
 AllCompany.Career_Development <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
 
-newdata$OnlyLea[(newdata$QEng == "Engaged")&(newdata$Category == "Leadership")]<-"Engaged"
-newdata$OnlyLea[(newdata$QEng == "Neutral")&(newdata$Category == "Leadership")]<-"Neutral"
-newdata$OnlyLea[(newdata$QEng == "Disengaged")&(newdata$Category == "Leadership")]<-"Disengaged"
+df$OnlyLea[(df$QEng == "Engaged")&(df$Category == "Leadership")]<-"Engaged"
+df$OnlyLea[(df$QEng == "Neutral")&(df$Category == "Leadership")]<-"Neutral"
+df$OnlyLea[(df$QEng == "Disengaged")&(df$Category == "Leadership")]<-"Disengaged"
 
-va <- sum(newdata$OnlyLea == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$OnlyLea == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$OnlyLea == "Disengaged", na.rm = TRUE)
+va <- sum(df$OnlyLea == "Engaged", na.rm = TRUE)
+vb <- sum(df$OnlyLea == "Neutral", na.rm = TRUE)
+vc <- sum(df$OnlyLea == "Disengaged", na.rm = TRUE)
 print ("100")
 AllCompany.Leadership <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
-newdata$OnlyMis[(newdata$QEng == "Engaged")&(newdata$Category == "Mission")]<-"Engaged"
-newdata$OnlyMis[(newdata$QEng == "Neutral")&(newdata$Category == "Mission")]<-"Neutral"
-newdata$OnlyMis[(newdata$QEng == "Disengaged")&(newdata$Category == "Mission")]<-"Disengaged"
+df$OnlyMis[(df$QEng == "Engaged")&(df$Category == "Mission")]<-"Engaged"
+df$OnlyMis[(df$QEng == "Neutral")&(df$Category == "Mission")]<-"Neutral"
+df$OnlyMis[(df$QEng == "Disengaged")&(df$Category == "Mission")]<-"Disengaged"
 
-va <- sum(newdata$OnlyMis == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$OnlyMis == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$OnlyMis == "Disengaged", na.rm = TRUE)
+va <- sum(df$OnlyMis == "Engaged", na.rm = TRUE)
+vb <- sum(df$OnlyMis == "Neutral", na.rm = TRUE)
+vc <- sum(df$OnlyMis == "Disengaged", na.rm = TRUE)
 
 AllCompany.Mission <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
-newdata$OnlyRec[(newdata$QEng == "Engaged")&(newdata$Category == "Recognition")]<-"Engaged"
-newdata$OnlyRec[(newdata$QEng == "Neutral")&(newdata$Category == "Recognition")]<-"Neutral"
-newdata$OnlyRec[(newdata$QEng == "Disengaged")&(newdata$Category == "Recognition")]<-"Disengaged"
+df$OnlyRec[(df$QEng == "Engaged")&(df$Category == "Recognition")]<-"Engaged"
+df$OnlyRec[(df$QEng == "Neutral")&(df$Category == "Recognition")]<-"Neutral"
+df$OnlyRec[(df$QEng == "Disengaged")&(df$Category == "Recognition")]<-"Disengaged"
 
-va <- sum(newdata$OnlyRec == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$OnlyRec == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$OnlyRec == "Disengaged", na.rm = TRUE)
+va <- sum(df$OnlyRec == "Engaged", na.rm = TRUE)
+vb <- sum(df$OnlyRec == "Neutral", na.rm = TRUE)
+vc <- sum(df$OnlyRec == "Disengaged", na.rm = TRUE)
 
 AllCompany.Recognition <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
-newdata$OnlyTea[(newdata$QEng == "Engaged")&(newdata$Category == "Teamwork")]<-"Engaged"
-newdata$OnlyTea[(newdata$QEng == "Neutral")&(newdata$Category == "Teamwork")]<-"Neutral"
-newdata$OnlyTea[(newdata$QEng == "Disengaged")&(newdata$Category == "Teamwork")]<-"Disengaged"
+df$OnlyTea[(df$QEng == "Engaged")&(df$Category == "Teamwork")]<-"Engaged"
+df$OnlyTea[(df$QEng == "Neutral")&(df$Category == "Teamwork")]<-"Neutral"
+df$OnlyTea[(df$QEng == "Disengaged")&(df$Category == "Teamwork")]<-"Disengaged"
 
-va <- sum(newdata$OnlyTea == "Engaged", na.rm = TRUE)
-vb <- sum(newdata$OnlyTea == "Neutral", na.rm = TRUE)
-vc <- sum(newdata$OnlyTea == "Disengaged", na.rm = TRUE)
+va <- sum(df$OnlyTea == "Engaged", na.rm = TRUE)
+vb <- sum(df$OnlyTea == "Neutral", na.rm = TRUE)
+vc <- sum(df$OnlyTea == "Disengaged", na.rm = TRUE)
 
 AllCompany.Teamwork <- plyr::round_any(100 * (va - vc)/(va + vb + vc), accuracy=1, f=floor)
 
@@ -229,7 +238,7 @@ print ("139")
 
 # First, get each Team Leader with number of engaged/disengaged:
 
-TLmatrix.Mood <- as.data.frame.matrix(xtabs(~Team.Leader + MoodEng, data=newdata))
+TLmatrix.Mood <- as.data.frame.matrix(xtabs(~Team.Leader + MoodEng, data=df))
 
 # Then, calculte Mood NPS for Each and append it as a rounded value:
 
@@ -237,25 +246,25 @@ TLmatrix.Mood <- within(TLmatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - D
 
 # Repeat for Engagemnent, Ownership, etc...
 
-# TLmatrix.Engagement <- as.data.frame.matrix(xtabs(~Team.Leader + QEng, data=newdata))
+# TLmatrix.Engagement <- as.data.frame.matrix(xtabs(~Team.Leader + QEng, data=df))
 # TLmatrix.Engagement <- within(TLmatrix.Engagement, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# TLmatrix.Ownership <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyOwn, data=newdata))
+# TLmatrix.Ownership <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyOwn, data=df))
 # TLmatrix.Ownership <- within(TLmatrix.Ownership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# TLmatrix.Career_Development <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyCD, data=newdata))
+# TLmatrix.Career_Development <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyCD, data=df))
 # TLmatrix.Career_Development <- within(TLmatrix.Career_Development, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-TLmatrix.Leadership <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyLea, data=newdata))
+TLmatrix.Leadership <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyLea, data=df))
 TLmatrix.Leadership <- within(TLmatrix.Leadership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# TLmatrix.Mission <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyMis, data=newdata))
+# TLmatrix.Mission <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyMis, data=df))
 # TLmatrix.Mission <- within(TLmatrix.Mission, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# TLmatrix.Recognition <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyRec, data=newdata))
+# TLmatrix.Recognition <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyRec, data=df))
 # TLmatrix.Recognition <- within(TLmatrix.Recognition, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# TLmatrix.Teamwork <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyTea, data=newdata))
+# TLmatrix.Teamwork <- as.data.frame.matrix(xtabs(~Team.Leader + OnlyTea, data=df))
 # TLmatrix.Teamwork <- within(TLmatrix.Teamwork, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 print ("182")
 TLmatrix <- data.frame(TLmatrix.Mood$NPS, TLmatrix.Leadership$NPS)
@@ -276,28 +285,28 @@ colnames(TLmatrix) <- row.names(TLmatrix.Mood)
 TLmatrix$`Company Average` <- AllCompany$AllCompanyColBody
 ## Job Titles
 print ("200")
-JobTitleMatrix.Mood <- as.data.frame.matrix(xtabs(~Job.Title + MoodEng, data=newdata))
+JobTitleMatrix.Mood <- as.data.frame.matrix(xtabs(~Job.Title + MoodEng, data=df))
 JobTitlematrix.Mood <- within(JobTitleMatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 print ("206")
-# JobTitlematrix.Engagement <- as.data.frame.matrix(xtabs(~Job.Title + QEng, data=newdata))
+# JobTitlematrix.Engagement <- as.data.frame.matrix(xtabs(~Job.Title + QEng, data=df))
 # JobTitlematrix.Engagement <- within(JobTitlematrix.Engagement, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# JobTitlematrix.Ownership <- as.data.frame.matrix(xtabs(~Job.Title + OnlyOwn, data=newdata))
+# JobTitlematrix.Ownership <- as.data.frame.matrix(xtabs(~Job.Title + OnlyOwn, data=df))
 # JobTitlematrix.Ownership <- within(JobTitlematrix.Ownership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# JobTitlematrix.Career_Development <- as.data.frame.matrix(xtabs(~Job.Title + OnlyCD, data=newdata))
+# JobTitlematrix.Career_Development <- as.data.frame.matrix(xtabs(~Job.Title + OnlyCD, data=df))
 # JobTitlematrix.Career_Development <- within(JobTitlematrix.Career_Development, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 print ("215")
-JobTitlematrix.Leadership <- as.data.frame.matrix(xtabs(~Job.Title + OnlyLea, data=newdata))
+JobTitlematrix.Leadership <- as.data.frame.matrix(xtabs(~Job.Title + OnlyLea, data=df))
 JobTitlematrix.Leadership <- within(JobTitlematrix.Leadership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# JobTitlematrix.Mission <- as.data.frame.matrix(xtabs(~Job.Title + OnlyMis, data=newdata))
+# JobTitlematrix.Mission <- as.data.frame.matrix(xtabs(~Job.Title + OnlyMis, data=df))
 # JobTitlematrix.Mission <- within(JobTitlematrix.Mission, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# JobTitlematrix.Recognition <- as.data.frame.matrix(xtabs(~Job.Title + OnlyRec, data=newdata))
+# JobTitlematrix.Recognition <- as.data.frame.matrix(xtabs(~Job.Title + OnlyRec, data=df))
 # JobTitlematrix.Recognition <- within(JobTitlematrix.Recognition, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# JobTitlematrix.Teamwork <- as.data.frame.matrix(xtabs(~Job.Title + OnlyTea, data=newdata))
+# JobTitlematrix.Teamwork <- as.data.frame.matrix(xtabs(~Job.Title + OnlyTea, data=df))
 # JobTitlematrix.Teamwork <- within(JobTitlematrix.Teamwork, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 print ("227")
 # JobTitlematrix <- data.frame(JobTitlematrix.Mood$NPS, JobTitlematrix.Engagement$NPS, JobTitlematrix.Career_Development$NPS, JobTitlematrix.Leadership$NPS, JobTitlematrix.Mission$NPS, JobTitlematrix.Ownership$NPS, JobTitlematrix.Recognition$NPS, JobTitlematrix.Teamwork$NPS)
@@ -317,28 +326,28 @@ JobTitlematrix$`Company Average` <- AllCompany$AllCompanyColBody
 
 ## Location
 print ("244")
-LocMatrix.Mood <- as.data.frame.matrix(xtabs(~Location + MoodEng, data=newdata))
+LocMatrix.Mood <- as.data.frame.matrix(xtabs(~Location + MoodEng, data=df))
 LocMatrix.Mood <- within(LocMatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 print ("247")
-# LocMatrix.Engagement <- as.data.frame.matrix(xtabs(~Location + QEng, data=newdata))
+# LocMatrix.Engagement <- as.data.frame.matrix(xtabs(~Location + QEng, data=df))
 # LocMatrix.Engagement <- within(LocMatrix.Engagement, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# LocMatrix.Ownership <- as.data.frame.matrix(xtabs(~Location + OnlyOwn, data=newdata))
+# LocMatrix.Ownership <- as.data.frame.matrix(xtabs(~Location + OnlyOwn, data=df))
 # LocMatrix.Ownership <- within(LocMatrix.Ownership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# LocMatrix.Career_Development <- as.data.frame.matrix(xtabs(~Location + OnlyCD, data=newdata))
+# LocMatrix.Career_Development <- as.data.frame.matrix(xtabs(~Location + OnlyCD, data=df))
 # LocMatrix.Career_Development <- within(LocMatrix.Career_Development, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 print ("256")
-LocMatrix.Leadership <- as.data.frame.matrix(xtabs(~Location + OnlyLea, data=newdata))
+LocMatrix.Leadership <- as.data.frame.matrix(xtabs(~Location + OnlyLea, data=df))
 LocMatrix.Leadership <- within(LocMatrix.Leadership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# LocMatrix.Mission <- as.data.frame.matrix(xtabs(~Location + OnlyMis, data=newdata))
+# LocMatrix.Mission <- as.data.frame.matrix(xtabs(~Location + OnlyMis, data=df))
 # LocMatrix.Mission <- within(LocMatrix.Mission, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# LocMatrix.Recognition <- as.data.frame.matrix(xtabs(~Location + OnlyRec, data=newdata))
+# LocMatrix.Recognition <- as.data.frame.matrix(xtabs(~Location + OnlyRec, data=df))
 # LocMatrix.Recognition <- within(LocMatrix.Recognition, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# LocMatrix.Teamwork <- as.data.frame.matrix(xtabs(~Location + OnlyTea, data=newdata))
+# LocMatrix.Teamwork <- as.data.frame.matrix(xtabs(~Location + OnlyTea, data=df))
 # LocMatrix.Teamwork <- within(LocMatrix.Teamwork, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 #
 # LocMatrix <- data.frame(LocMatrix.Mood$NPS, LocMatrix.Engagement$NPS, LocMatrix.Career_Development$NPS, LocMatrix.Leadership$NPS, LocMatrix.Mission$NPS, LocMatrix.Ownership$NPS, LocMatrix.Recognition$NPS, LocMatrix.Teamwork$NPS)
@@ -358,28 +367,28 @@ LocMatrix$`Company Average` <- AllCompany$AllCompanyColBody
 
 ## Employee Level
 
-ELevel.Mood <- as.data.frame.matrix(xtabs(~Employee.Level + MoodEng, data=newdata))
+ELevel.Mood <- as.data.frame.matrix(xtabs(~Employee.Level + MoodEng, data=df))
 ELevel.Mood <- within(ELevel.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# ELevel.Engagement <- as.data.frame.matrix(xtabs(~Employee.Level + QEng, data=newdata))
+# ELevel.Engagement <- as.data.frame.matrix(xtabs(~Employee.Level + QEng, data=df))
 # ELevel.Engagement <- within(ELevel.Engagement, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# ELevel.Ownership <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyOwn, data=newdata))
+# ELevel.Ownership <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyOwn, data=df))
 # ELevel.Ownership <- within(ELevel.Ownership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# ELevel.Career_Development <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyCD, data=newdata))
+# ELevel.Career_Development <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyCD, data=df))
 # ELevel.Career_Development <- within(ELevel.Career_Development, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-ELevel.Leadership <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyLea, data=newdata))
+ELevel.Leadership <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyLea, data=df))
 ELevel.Leadership <- within(ELevel.Leadership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# ELevel.Mission <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyMis, data=newdata))
+# ELevel.Mission <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyMis, data=df))
 # ELevel.Mission <- within(ELevel.Mission, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# ELevel.Recognition <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyRec, data=newdata))
+# ELevel.Recognition <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyRec, data=df))
 # ELevel.Recognition <- within(ELevel.Recognition, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# ELevel.Teamwork <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyTea, data=newdata))
+# ELevel.Teamwork <- as.data.frame.matrix(xtabs(~Employee.Level + OnlyTea, data=df))
 # ELevel.Teamwork <- within(ELevel.Teamwork, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 print("304")
 # ELevel <- data.frame(ELevel.Mood$NPS, ELevel.Engagement$NPS, ELevel.Career_Development$NPS, ELevel.Leadership$NPS, ELevel.Mission$NPS, ELevel.Ownership$NPS, ELevel.Recognition$NPS, ELevel.Teamwork$NPS)
@@ -399,28 +408,28 @@ ELevel$`Company Average` <- AllCompany$AllCompanyColBody
 
 ## Employee Level
 
-Tenure.Mood <- as.data.frame.matrix(xtabs(~Tenure + MoodEng, data=newdata))
+Tenure.Mood <- as.data.frame.matrix(xtabs(~Tenure + MoodEng, data=df))
 Tenure.Mood <- within(Tenure.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# Tenure.Engagement <- as.data.frame.matrix(xtabs(~Tenure + QEng, data=newdata))
+# Tenure.Engagement <- as.data.frame.matrix(xtabs(~Tenure + QEng, data=df))
 # Tenure.Engagement <- within(Tenure.Engagement, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# Tenure.Ownership <- as.data.frame.matrix(xtabs(~Tenure + OnlyOwn, data=newdata))
+# Tenure.Ownership <- as.data.frame.matrix(xtabs(~Tenure + OnlyOwn, data=df))
 # Tenure.Ownership <- within(Tenure.Ownership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# Tenure.Career_Development <- as.data.frame.matrix(xtabs(~Tenure + OnlyCD, data=newdata))
+# Tenure.Career_Development <- as.data.frame.matrix(xtabs(~Tenure + OnlyCD, data=df))
 # Tenure.Career_Development <- within(Tenure.Career_Development, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-Tenure.Leadership <- as.data.frame.matrix(xtabs(~Tenure + OnlyLea, data=newdata))
+Tenure.Leadership <- as.data.frame.matrix(xtabs(~Tenure + OnlyLea, data=df))
 Tenure.Leadership <- within(Tenure.Leadership, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# Tenure.Mission <- as.data.frame.matrix(xtabs(~Tenure + OnlyMis, data=newdata))
+# Tenure.Mission <- as.data.frame.matrix(xtabs(~Tenure + OnlyMis, data=df))
 # Tenure.Mission <- within(Tenure.Mission, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# Tenure.Recognition <- as.data.frame.matrix(xtabs(~Tenure + OnlyRec, data=newdata))
+# Tenure.Recognition <- as.data.frame.matrix(xtabs(~Tenure + OnlyRec, data=df))
 # Tenure.Recognition <- within(Tenure.Recognition, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 
-# Tenure.Teamwork <- as.data.frame.matrix(xtabs(~Tenure + OnlyTea, data=newdata))
+# Tenure.Teamwork <- as.data.frame.matrix(xtabs(~Tenure + OnlyTea, data=df))
 # Tenure.Teamwork <- within(Tenure.Teamwork, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
 #
 # Tenure <- data.frame(Tenure.Mood$NPS, Tenure.Engagement$NPS, Tenure.Career_Development$NPS, Tenure.Leadership$NPS, Tenure.Mission$NPS, Tenure.Ownership$NPS, Tenure.Recognition$NPS, Tenure.Teamwork$NPS)
@@ -439,11 +448,11 @@ colnames(Tenure) <- row.names(Tenure.Mood)
 Tenure$`Company Average` <- AllCompany$AllCompanyColBody
 
 # Q1 Score
-Q1Score <- count(newdata$Q1)
+Q1Score <- count(df$Q1)
 # Q2 Score
-Q2Score <- count(newdata$Q2)
+Q2Score <- count(df$Q2)
 # Q3 Score
-Q3Score <- count(newdata$Q3)
+Q3Score <- count(df$Q3)
 
 QScores <- data.frame(Q1Score$x, Q1Score$freq, Q2Score$freq, Q3Score$freq)
 
