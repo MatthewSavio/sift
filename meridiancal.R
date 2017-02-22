@@ -340,26 +340,32 @@ Q1_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q1CD", "Q1Lead", "Q1Miss", 
 Q2_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q2CD", "Q2Lead", "Q2Miss", "Q2Own", "Q2Rec", "Q2Team")
 Q3_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q3CD", "Q3Lead", "Q3Miss", "Q3Own", "Q3Rec", "Q3Team")
 
-filenameTL <- paste(filename, "_", "TL_Table", sep="")
-ExportTable(TL_Table, filenameTL)
+doExport <- "No"
+doExport <- readline(prompt="Export CSVs?: ")
 
-filenameJobTitle <- paste(filename, "_", "JobTitle_Table", sep="")
-ExportTable(JobTitle_Table, filenameJobTitle)
+if (doExport == "yes"|"Yes"|"YES"|"Y"|"TRUE"|"y") {
+	filenameTL <- paste(filename, "_", "TL_Table", sep="")
+	ExportTable(TL_Table, filenameTL)
 
-filenameTeam <- paste(filename, "_", "Team_Table", sep="")
-ExportTable(Team_Table, filenameTeam)
+	filenameJobTitle <- paste(filename, "_", "JobTitle_Table", sep="")
+	ExportTable(JobTitle_Table, filenameJobTitle)
 
-# filenameTenure <- paste(filename, "_", "Tenure_Table", sep="")
-# ExportTable(Tenure_Table, filenameTenure)
+	filenameTeam <- paste(filename, "_", "Team_Table", sep="")
+	ExportTable(Team_Table, filenameTeam)
 
-filenameQ1 <- paste(filename, "_", "Q1_Table", sep="")
-ExportTable(Q1_Table, filenameQ1)
+	# filenameTenure <- paste(filename, "_", "Tenure_Table", sep="")
+	# ExportTable(Tenure_Table, filenameTenure)
 
-filenameQ2 <- paste(filename, "_", "Q2_Table", sep="")
-ExportTable(Q2_Table, filenameQ2)
+	filenameQ1 <- paste(filename, "_", "Q1_Table", sep="")
+	ExportTable(Q1_Table, filenameQ1)
 
-filenameQ3 <- paste(filename, "_", "Q3_Table", sep="")
-ExportTable(Q3_Table, filenameQ3)
+	filenameQ2 <- paste(filename, "_", "Q2_Table", sep="")
+	ExportTable(Q2_Table, filenameQ2)
+
+	filenameQ3 <- paste(filename, "_", "Q3_Table", sep="")
+	ExportTable(Q3_Table, filenameQ3)
+}
+
 
 ######  !!!  ######
 
