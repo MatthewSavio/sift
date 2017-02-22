@@ -340,10 +340,10 @@ Q1_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q1CD", "Q1Lead", "Q1Miss", 
 Q2_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q2CD", "Q2Lead", "Q2Miss", "Q2Own", "Q2Rec", "Q2Team")
 Q3_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q3CD", "Q3Lead", "Q3Miss", "Q3Own", "Q3Rec", "Q3Team")
 
-doExport <- "No"
-doExport <- readline(prompt="Export CSVs?: ")
+dE <- "No"
+dE <- readline(prompt="Export CSVs?: ")
 
-if (doExport == "yes"|"Yes"|"YES"|"Y"|"TRUE"|"y") {
+if ((dE == "yes")|(dE == "Yes")|(dE == "YES")|(dE == "Y")|(dE == "y")|(dE == "TRUE")) {
 	filenameTL <- paste(filename, "_", "TL_Table", sep="")
 	ExportTable(TL_Table, filenameTL)
 
