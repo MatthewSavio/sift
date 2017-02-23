@@ -340,6 +340,17 @@ Q1_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q1CD", "Q1Lead", "Q1Miss", 
 Q2_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q2CD", "Q2Lead", "Q2Miss", "Q2Own", "Q2Rec", "Q2Team")
 Q3_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q3CD", "Q3Lead", "Q3Miss", "Q3Own", "Q3Rec", "Q3Team")
 
+#####
+
+df <- NewCategoryCol(df, "Ownership", "Mood-Wk3", "MoodEng")
+df <- NewCategoryCol(df, "Career Development", "Mood-Wk5", "MoodEng")
+df <- NewCategoryCol(df, "Leadership", "Mood-Wk1", "MoodEng")
+df <- NewCategoryCol(df, "Mission", "Mood-Wk2", "MoodEng")
+df <- NewCategoryCol(df, "Recognition", "Mood-Wk6", "MoodEng")
+df <- NewCategoryCol(df, "Teamwork", "Mood-Wk4", "MoodEng")
+
+
+
 dE <- "No"
 dE <- readline(prompt="Export CSVs?: ")
 
