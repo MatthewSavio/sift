@@ -27,7 +27,90 @@ library(dplyr)
 LB <- 3.5 ######
 MB <- 5.5 ######
 UB <- 8   ######
-################
+
+
+########## Initialize Variables for Created Columns
+
+
+
+
+#################### Functions ###############
+
+########### IO Functions ########
+
+# Import 
+
+# Export to CSV
+
+# Export to Google Sheets (using G Sheets R API)
+
+########### Data format Functions #########
+
+# Get FOC / Meridian Standard
+
+# Rename column variables
+
+
+########### Create Columns and Rows #########
+
+# New Col
+
+# New Row
+
+
+
+########## Test Missing Cols and Rows #######
+
+# Test Col
+
+# Test Row
+
+########### Create Tables ##########
+
+# Make Cross Table
+
+
+########### NPS Functions
+
+# NPS Col
+
+# New NPS Col
+
+# Make NPS Table
+
+# Calculate NPS, given column with some NAs 
+
+
+############ Specialized Functions
+
+# New Category Col
+
+# Test Tenure Rows
+
+# df Category by
+
+# Group Meridian CSVs together
+
+MultMerge <- function(mypath) {
+	filenames = list.files(path=mypath, full.names=TRUE)
+	datalist = lapply(filenames, function(x) {
+		read.csv(file=x, header=T)
+	} )
+	Reduce(function(x,y) {merge(x,y)}, datalist)
+}
+
+# Make Q1 / Q2 / Q3 for Leadership by Team Leader Table (and for others)
+
+# Calculate Response Rate (# of respondants, est. # of TMs)
+
+# Make Difference Sheets for overall changes.
+
+# Graphing Functions # or Plot.ly
+
+
+############## END FUNCTIONS ##########
+
+
 
 NewCol <- function(df, colname="NewCol", fill=NA) {
 	df[,colname] <- fill
@@ -95,6 +178,7 @@ ImportFile <- function(filename) {
 
 # Exports dataframe to CSV with datestamp
 # example:    ExportTable(df, "finaltable")
+# Should offer option to rename CSV export, but otherwise give general name.
 ExportTable <- function(df, filename="csvexport") {
 	filename <- gsub("[?().,@~`^&*{}<>#;!¡¿%$·']", "", filename)
 	filename <- paste(filename, "_", Sys.Date(), ".csv", sep="") 
@@ -160,9 +244,8 @@ dfCategoryBy <- function(df, categoryby=teamleader, ColMood="MoodEng", ColCD="On
 }
 
 
+##############################
 
-
-##### Get CrossTable
 
 # Get function for combining Meridian's CSV sheets on top of each other.
 
@@ -342,12 +425,22 @@ Q3_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q3CD", "Q3Lead", "Q3Miss", 
 
 #####
 
-df <- NewCategoryCol(df, "Ownership", "Mood-Wk3", "MoodEng")
-df <- NewCategoryCol(df, "Career Development", "Mood-Wk5", "MoodEng")
-df <- NewCategoryCol(df, "Leadership", "Mood-Wk1", "MoodEng")
-df <- NewCategoryCol(df, "Mission", "Mood-Wk2", "MoodEng")
-df <- NewCategoryCol(df, "Recognition", "Mood-Wk6", "MoodEng")
-df <- NewCategoryCol(df, "Teamwork", "Mood-Wk4", "MoodEng")
+WeeklyMood <- MakeNPSTable(df, df$survey_category, df$MoodEng)
+
+
+# df <- NewCategoryCol(df, "Leadership", "Mood-Wk1", "MoodEng")
+# df <- NewCategoryCol(df, "Mission", "Mood-Wk2", "MoodEng")
+# df <- NewCategoryCol(df, "Ownership", "Mood-Wk3", "MoodEng")
+# df <- NewCategoryCol(df, "Teamwork", "Mood-Wk4", "MoodEng")
+# df <- NewCategoryCol(df, "Career Development", "Mood-Wk5", "MoodEng")
+# df <- NewCategoryCol(df, "Recognition", "Mood-Wk6", "MoodEng")
+
+# week1NPS <- CalcColNPS(df, "Mood-Wk1")
+# week2NPS <- CalcColNPS(df, "Mood-Wk2")
+# week3NPS <- CalcColNPS(df, "Mood-Wk3")
+# week4NPS <- CalcColNPS(df, "Mood-Wk4")
+# week5NPS <- CalcColNPS(df, "Mood-Wk5")
+# week6NPS <- CalcColNPS(df, "Mood-Wk6")
 
 
 
