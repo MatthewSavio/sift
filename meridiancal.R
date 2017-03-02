@@ -21,7 +21,7 @@ library(dplyr)
 # Upper Bounds "8"
 # Neutral Bounds "5.5"
 # Lower Bounds "3.5"
-# TLmatrix.Mood <- within(TLmatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
+# TLmatrix.Mood <- within(TLmatrix.Mood, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=round))
 
 ########## Initialize Bounds ##########
 LB <- 3.5 ######
@@ -31,7 +31,12 @@ UB <- 8   ######
 
 ########## Initialize Variables for Created Columns
 
-
+CDList <- c("Q1CD", "Q2CD", "Q3CD","OnlyCD")
+LeadList <- c("Q1Lead", "Q2Lead", "Q3Lead","OnlyLead")
+MissList <- c("Q1Miss", "Q2Miss", "Q3Miss","OnlyMiss")
+OwnList <- c("Q1Own", "Q2Own", "Q3Own","OnlyOwn")
+RecList <- c("Q1Rec", "Q2Rec", "Q3Rec","OnlyRec")
+TeamList <- c("Q1Team", "Q2Rec", "Q3Rec","OnlyRec")
 
 
 #################### Functions ###############
@@ -39,6 +44,7 @@ UB <- 8   ######
 ########### IO Functions ########
 
 # Import 
+
 
 # Export to CSV
 
@@ -91,13 +97,10 @@ UB <- 8   ######
 
 # Group Meridian CSVs together
 
-MultMerge <- function(mypath) {
-	filenames = list.files(path=mypath, full.names=TRUE)
-	datalist = lapply(filenames, function(x) {
-		read.csv(file=x, header=T)
-	} )
-	Reduce(function(x,y) {merge(x,y)}, datalist)
-}
+# Binds All CSVs in a folder, given the path "mypath".
+
+
+
 
 # Make Q1 / Q2 / Q3 for Leadership by Team Leader Table (and for others)
 
@@ -165,14 +168,32 @@ MakeNPSTable <- function(df, GroupCol, EngagementCol) {
 	df <- TestMissingCol(df, "Engaged")
 	df <- TestMissingCol(df, "Neutral")
 	df <- TestMissingCol(df, "Disengaged")
-	df <- within(df, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=floor))
+	df <- within(df, NPS <- plyr::round_any(100 * (Engaged - Disengaged)/(Engaged + Neutral + Disengaged), accuracy=1, f=round))
 	return (df)
 }
 
 # Requests file name of CSV in folder and imports it to a var
 # example:     df <- ImportFile()
-ImportFile <- function(filename) {
-	df <- read.csv(filename, header = TRUE)
+ImportFile <- function(filename, hasHeader = TRUE, strFactor=TRUE) {
+	df <- read.csv(filename, header = hasHeader, stringsAsFactors=strFactor)
+	return (df)
+}
+
+ImportFolder <- function(wd) {
+	fileList <- list.files(wd)
+	df <- data.frame()
+	for (file in fileList) {
+		f <- paste(wd, file, sep="/")
+		if (!exists("dataset")) {
+			dataset <- read.csv(f, header=TRUE)
+		}
+		else if (exists("dataset")) {
+			temp <- read.csv(f, header=TRUE)
+			dataset <- rbind(dataset, temp)
+			rm(temp)
+			df <- dataset
+		}
+	}
 	return (df)
 }
 
@@ -244,6 +265,43 @@ dfCategoryBy <- function(df, categoryby=teamleader, ColMood="MoodEng", ColCD="On
 }
 
 
+MakeQTable <- function(df, categoryby=teamleader, QCol="QAvg") {
+	QTable <- MakeNPSTable(df, df[[categoryby]], df[[QCol]])
+	# Save Row Names
+	rowsave <- row.names(QTable)
+
+	QTable <- data.frame(t(QTable))
+	# Return row names as col names
+	colnames(QTable) <- rowsave
+	# Append Question Col info to row names:
+	row.names(QTable) <- paste(QCol, row.names(QTable))
+	return (QTable)
+}
+
+CombineQTables <- function(Q1T, Q2T) {
+	x <- rbind(Q1T, Q2T)
+	return (x)
+}
+
+MakeQRawTable <- function(df, categoryby=teamleader, catlist) {
+	x <- MakeQTable(df, categoryby, catlist[1])
+	x <- rbind(x, MakeQTable(df, categoryby, catlist[2]))
+	x <- rbind(x, MakeQTable(df, categoryby, catlist[3]))
+	x <- rbind(x, MakeQTable(df, categoryby, catlist[4]))
+	return(x)
+}
+
+DeleteRows <- function(df) {
+	df <- df[c(),]
+	return (df)
+}
+
+ImportHeader <- function() { # TRASH THIS
+	header <- ImportFile("headerfile.csv", strFactor=FALSE)
+	return (header)
+}
+
+
 ##############################
 
 
@@ -252,10 +310,17 @@ dfCategoryBy <- function(df, categoryby=teamleader, ColMood="MoodEng", ColCD="On
 
 #####################
 
+# Part zero:  Folderbind
 
-# Part one: Import new datafile
-filename <- readline(prompt="Enter a file name: ")
-df <- ImportFile(filename)
+invisible(readline(prompt="Please choose a file in the folder to import. (Press Enter)"))
+
+mypath <- dirname(file.choose())
+
+df <- ImportFolder(mypath)
+
+#ExportTable(boundcsv, "wrapfile")
+
+#df <- ImportFile(boundcsv)
 
 # Part two:  Parse File Headers
 CompName <- AskCompName()
@@ -277,6 +342,17 @@ if (CompName == "FOC") {
 
 if (CompName == "Meridian") {
 	dateformat <- "%m/%d/%y"
+	TenureDaysCol <- "dateInJob"
+	MoodScore <- "mood_score"
+	Q1Score <- "category_question_1_score"
+	Q2Score <- "category_question_2_score"
+	Q3Score <- "category_question_3_score"
+	category <- "survey_category"
+	teamleader <- "teamLeader"
+	jobtitle <- "title"
+	team <- "department"
+
+
 }
 
 
@@ -380,6 +456,7 @@ print ("139")
 TL_Table <- dfCategoryBy(df, teamleader)
 JobTitle_Table <- dfCategoryBy(df, jobtitle)
 Team_Table <- dfCategoryBy(df, team)
+print ("470")
 # Tenure_Table <- dfCategoryBy(df, "Tenure")
 ### NOTE:  Tenure is Broken.
 
@@ -397,14 +474,14 @@ Team_Table <- dfCategoryBy(df, team)
 # Breakdown Questions by TL.
 
 # Category Question Rows
-
+print("488")
 df <- NewCategoryCol(df, "Ownership", "Q1Own", "Q1")
 df <- NewCategoryCol(df, "Career Development", "Q1CD", "Q1")
 df <- NewCategoryCol(df, "Leadership", "Q1Lead", "Q1")
 df <- NewCategoryCol(df, "Mission", "Q1Miss", "Q1")
 df <- NewCategoryCol(df, "Recognition", "Q1Rec", "Q1")
 df <- NewCategoryCol(df, "Teamwork", "Q1Team", "Q1")
-
+print ("495")
 df <- NewCategoryCol(df, "Ownership", "Q2Own", "Q2")
 df <- NewCategoryCol(df, "Career Development", "Q2CD", "Q2")
 df <- NewCategoryCol(df, "Leadership", "Q2Lead", "Q2")
@@ -418,14 +495,15 @@ df <- NewCategoryCol(df, "Mission", "Q3Miss", "Q3")
 df <- NewCategoryCol(df, "Ownership", "Q3Own", "Q3")
 df <- NewCategoryCol(df, "Recognition", "Q3Rec", "Q3")
 df <- NewCategoryCol(df, "Teamwork", "Q3Team", "Q3")
-
+print ("509")
 Q1_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q1CD", "Q1Lead", "Q1Miss", "Q1Own", "Q1Rec", "Q1Team")
 Q2_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q2CD", "Q2Lead", "Q2Miss", "Q2Own", "Q2Rec", "Q2Team")
 Q3_Table <- dfCategoryBy(df, teamleader, "MoodEng", "Q3CD", "Q3Lead", "Q3Miss", "Q3Own", "Q3Rec", "Q3Team")
 
 #####
-
+print ("515")
 WeeklyMood <- MakeNPSTable(df, df$survey_category, df$MoodEng)
+
 
 
 # df <- NewCategoryCol(df, "Leadership", "Mood-Wk1", "MoodEng")
@@ -442,12 +520,25 @@ WeeklyMood <- MakeNPSTable(df, df$survey_category, df$MoodEng)
 # week5NPS <- CalcColNPS(df, "Mood-Wk5")
 # week6NPS <- CalcColNPS(df, "Mood-Wk6")
 
+print ("535")
+#header <- ImportHeader()  # NOTE, TRASH THIS and replace
+TL_Breakdown_Mission <- MakeQRawTable(df, teamleader, MissList)
+TL_Breakdown_Leadership <- MakeQRawTable(df, teamleader, LeadList)
+TL_Breakdown_CareerDev <- MakeQRawTable(df, teamleader, CDList)
+TL_Breakdown_Ownership <- MakeQRawTable(df, teamleader, OwnList)
+TL_Breakdown_Recognition <- MakeQRawTable(df, teamleader, RecList)
+TL_Breakdown_Teamwork <- MakeQRawTable(df, teamleader, TeamList)
 
+
+print ("539")
 
 dE <- "No"
 dE <- readline(prompt="Export CSVs?: ")
 
 if ((dE == "yes")|(dE == "Yes")|(dE == "YES")|(dE == "Y")|(dE == "y")|(dE == "TRUE")) {
+	filenameQR <- paste(filename, "_", "QRaw", sep="")
+	ExportTable(TL_Breakdown_Mission, filenameQR)
+
 	filenameTL <- paste(filename, "_", "TL_Table", sep="")
 	ExportTable(TL_Table, filenameTL)
 
